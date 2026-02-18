@@ -34,19 +34,7 @@ It is a structured risk-flagging assistant.
 
 ## System Architecture
 
-PDF Upload
-   ↓
-Text Extraction
-   ↓
-Clause Chunking
-   ↓
-Vector Retrieval (FAISS)
-   ↓
-LLM Validation (Local)
-   ↓
-Structured JSON Output
-   ↓
-Risk Dashboard
+PDF Upload -> Text Extraction -> Clause Chunking -> Vector Retrieval (FAISS) -> LLM Validation (Local) -> Structured JSON Output -> Risk Dashboard
 
 ## Agent-Orchestrated Pipeline
 

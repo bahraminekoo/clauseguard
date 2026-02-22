@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     environment: str = "local"
     cors_allow_origins: str = "http://localhost:3000"
     ollama_base_url: str = "http://localhost:11434"
+    llm_model: str = "llama3"
+    embedding_model: str = "bge-large"
 
 
 settings = Settings()

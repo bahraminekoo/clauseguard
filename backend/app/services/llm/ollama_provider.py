@@ -28,12 +28,12 @@ class OllamaLLMProvider(LLMProvider):
         for _ in range(2):  # first try + one retry
             try:
                 raw_json = await self._chat(messages)
-                parsed = RiskValidationResult.model_validate_json(raw_json)
-                return parsed.model_copy(update={
-                    "category": "UNKNOWN",
-                    "clause_text": clause_text,
-                    "page": None,
-                })
+                obj = json.loads(raw_json)
+                obj.setdefault("category", "UNKNOWN")
+                obj.setdefault("clause_text", clause_text)
+                obj.setdefault("page", None)
+                parsed = RiskValidationResult.model_validate(obj)
+                return parsed
             except Exception as exc:  # noqa: BLE001 - want to catch validation/JSON
                 last_error = exc
                 continue

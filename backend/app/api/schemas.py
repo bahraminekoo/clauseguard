@@ -8,7 +8,10 @@ class HealthResponse(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    text: str = Field(min_length=1)
+    # Backward compatibility: support old text field OR new doc_id/query_text
+    text: str | None = None
+    doc_id: str | None = None
+    query_text: str | None = None
 
 
 class RiskFinding(BaseModel):
@@ -21,3 +24,7 @@ class RiskFinding(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     findings: list[RiskFinding]
+
+
+class UploadResponse(BaseModel):
+    doc_id: str

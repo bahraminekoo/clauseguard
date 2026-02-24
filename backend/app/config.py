@@ -7,7 +7,8 @@ class Settings(BaseSettings):
 
     app_name: str = "ClauseGuard API"
     environment: str = "local"
-    cors_allow_origins: str = "http://localhost:3000"
+    # Comma-separated origins for CORS
+    cors_allow_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     ollama_base_url: str = "http://localhost:11434"
     llm_model: str = "llama3"
     embedding_model: str = "bge-large"

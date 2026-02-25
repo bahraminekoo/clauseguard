@@ -12,6 +12,7 @@ class AnalyzeRequest(BaseModel):
     text: str | None = None
     doc_id: str | None = None
     query_text: str | None = None
+    category_keys: list[str] | None = None
 
 
 class RiskFinding(BaseModel):

@@ -33,6 +33,8 @@ class OllamaLLMProvider(LLMProvider):
                 obj.setdefault("clause_text", clause_text)
                 obj.setdefault("page", None)
                 parsed = RiskValidationResult.model_validate(obj)
+                if not parsed.explanation.strip():
+                    parsed.explanation = "Model output invalid: empty explanation"
                 return parsed
             except Exception as exc:  # noqa: BLE001 - want to catch validation/JSON
                 last_error = exc

@@ -18,7 +18,7 @@ class EmbeddingProvider(ABC):
         raise NotImplementedError
 
     async def embed_batch(self, texts: Iterable[str]) -> List[List[float]]:
-        """Default batch implementation; providers may override for efficiency."""
+        """Default batch implementation, providers may override for efficiency."""
         return [await self.embed(t) for t in texts]
 
 

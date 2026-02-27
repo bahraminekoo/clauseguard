@@ -7,10 +7,12 @@ RISK_CATEGORIES = {
             "Do NOT flag mere termination rights or dismissal conditions as unlimited liability; "
             "look for uncapped damages, indemnities, or liability with no stated limit."
         ),
+        "seed_query": "unlimited liability no cap on damages indemnification financial exposure",
     },
     "INDEMNIFICATION": {
         "name": "Indemnification",
         "definition": "Obligation to indemnify the other party for broad categories of losses or third-party claims.",
+        "seed_query": "indemnify hold harmless defend against losses third party claims",
     },
     "TERMINATION": {
         "name": "Termination for Convenience",
@@ -19,6 +21,7 @@ RISK_CATEGORIES = {
             "Focus on rights to end the agreement for convenience and the notice/payment terms. "
             "This is distinct from summary dismissal for misconduct or breach."
         ),
+        "seed_query": "termination for convenience without cause sole discretion terminate at any time",
     },
 }
 
@@ -28,3 +31,10 @@ def get_category_definition(key: str) -> str:
     if not category:
         raise KeyError(f"Unknown risk category: {key}")
     return category["definition"]
+
+
+def get_category_seed_query(key: str) -> str:
+    category = RISK_CATEGORIES.get(key)
+    if not category:
+        raise KeyError(f"Unknown risk category: {key}")
+    return category.get("seed_query", "")

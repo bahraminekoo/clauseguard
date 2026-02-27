@@ -1,11 +1,15 @@
 
+import logging
+
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import AnalyzeRequest, AnalyzeResponse, RiskFinding
 from app.services.embedding_service import get_embedding_provider
 from app.services.llm.ollama_provider import OllamaLLMProvider
-from app.services.risk_registry import RISK_CATEGORIES, get_category_definition
+from app.services.risk_registry import RISK_CATEGORIES, get_category_definition, get_category_seed_query
 from app.services.vector_store import vector_store
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(tags=["analyze"])
@@ -64,12 +68,34 @@ async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
 
     embedder = get_embedding_provider()
     query_embedding = await embedder.embed(query)
-    retrieved = vector_store.search(doc_id, query_embedding, top_k=3, min_score=0.25)
-    if not retrieved:
-        # Retry without min_score to avoid empty results from aggressive filtering
-        retrieved = vector_store.search(doc_id, query_embedding, top_k=3, min_score=0.0)
+
+    # Gather chunks via user query
+    retrieved_map: dict[str, tuple[str, float, int | None]] = {}
+    user_results = vector_store.search(doc_id, query_embedding, top_k=10, min_score=0.15)
+    if not user_results:
+        user_results = vector_store.search(doc_id, query_embedding, top_k=10, min_score=0.0)
+    for chunk_text, score, page in user_results:
+        if chunk_text not in retrieved_map or score > retrieved_map[chunk_text][1]:
+            retrieved_map[chunk_text] = (chunk_text, score, page)
+
+    # Augment with category seed queries
+    for category_key, _ in resolved_categories:
+        seed_query = get_category_seed_query(category_key)
+        if not seed_query:
+            continue
+        seed_embedding = await embedder.embed(seed_query)
+        seed_results = vector_store.search(doc_id, seed_embedding, top_k=10, min_score=0.15)
+        if not seed_results:
+            seed_results = vector_store.search(doc_id, seed_embedding, top_k=5, min_score=0.0)
+        for chunk_text, score, page in seed_results:
+            if chunk_text not in retrieved_map or score > retrieved_map[chunk_text][1]:
+                retrieved_map[chunk_text] = (chunk_text, score, page)
+
+    retrieved = list(retrieved_map.values())
     if not retrieved:
         raise HTTPException(status_code=404, detail="Document not found or no relevant chunks")
+
+    logger.info("doc_id=%s retrieved %d unique chunks for validation", doc_id, len(retrieved))
 
     llm = OllamaLLMProvider()
     findings: list[RiskFinding] = []
@@ -82,8 +108,17 @@ async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
                     category_definition,
                 )
             except Exception as exc:  # noqa: BLE001
+                logger.warning("LLM call failed for category=%s: %s", category_key, exc)
                 continue
-            if not result.risk_detected or result.confidence < 0.4:
+            logger.debug(
+                "chunk_score=%.3f category=%s risk=%s confidence=%.2f snippet=%.80s",
+                score,
+                category_key,
+                result.risk_detected,
+                result.confidence,
+                chunk_text,
+            )
+            if not result.risk_detected or result.confidence < 0.3:
                 continue
             display_category = RISK_CATEGORIES[category_key]["name"]
             finding = RiskFinding(

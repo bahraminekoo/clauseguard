@@ -20,9 +20,10 @@ class OllamaLLMProvider(LLMProvider):
     async def validate_clause(
         self,
         clause_text: str,
+        category_name: str,
         category_definition: str,
     ) -> RiskValidationResult:
-        messages = build_validation_prompt(clause_text, category_definition)
+        messages = build_validation_prompt(clause_text, category_name, category_definition)
 
         last_error: Exception | None = None
         for _ in range(2):  # first try + one retry

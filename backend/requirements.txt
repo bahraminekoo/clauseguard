@@ -10,3 +10,7 @@ pytest-asyncio==0.23.5
 respx==0.20.2
 numpy==1.26.4
 PyPDF2==3.0.1
+pdfminer.six==20231228
+pypdfium2==4.25.0
+pytesseract==0.3.10
+Pillow==10.2.0

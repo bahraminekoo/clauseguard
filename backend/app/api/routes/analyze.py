@@ -10,12 +10,13 @@ from app.services.vector_store import vector_store
 
 router = APIRouter(tags=["analyze"])
 
-DEFAULT_CATEGORY_KEY = "UNLIMITED_LIABILITY"
+# Default to all known categories when none are provided so we don't bias to a single class
+DEFAULT_CATEGORY_KEYS = list(RISK_CATEGORIES.keys())
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
-    category_keys = payload.category_keys or [DEFAULT_CATEGORY_KEY]
+    category_keys = payload.category_keys or DEFAULT_CATEGORY_KEYS
     resolved_categories: list[tuple[str, str]] = []
     try:
         for ck in category_keys:
@@ -57,25 +58,38 @@ async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
     doc_id = payload.doc_id.strip()
     query = payload.query_text.strip()
 
+    # Ensure document exists before embedding work
+    if doc_id not in vector_store._store:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=404, detail="Document not found. Please upload again and use the returned doc_id.")
+
     embedder = get_embedding_provider()
     query_embedding = await embedder.embed(query)
-    retrieved = vector_store.search(doc_id, query_embedding, top_k=3)
+    retrieved = vector_store.search(doc_id, query_embedding, top_k=3, min_score=0.25)
     if not retrieved:
-        raise HTTPException(status_code=404, detail="Document not found or no chunks")
+        # Retry without min_score to avoid empty results from aggressive filtering
+        retrieved = vector_store.search(doc_id, query_embedding, top_k=3, min_score=0.0)
+    if not retrieved:
+        raise HTTPException(status_code=404, detail="Document not found or no relevant chunks")
 
     llm = OllamaLLMProvider()
     findings: list[RiskFinding] = []
-    for chunk_text, _score in retrieved:
+    for chunk_text, score, page in retrieved:
         for category_key, category_definition in resolved_categories:
             try:
-                result = await llm.validate_clause(chunk_text, category_definition)
+                result = await llm.validate_clause(
+                    chunk_text,
+                    RISK_CATEGORIES[category_key]["name"],
+                    category_definition,
+                )
             except Exception as exc:  # noqa: BLE001
+                continue
+            if not result.risk_detected or result.confidence < 0.4:
                 continue
             display_category = RISK_CATEGORIES[category_key]["name"]
             finding = RiskFinding(
                 category=display_category,
                 confidence=result.confidence,
-                page=result.page,
+                page=page,
                 explanation=result.explanation,
                 clause_text=chunk_text,
             )

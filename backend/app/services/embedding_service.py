@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Iterable, List
 
 import httpx
+import logging
 
 from app.config import settings
 
@@ -19,7 +20,11 @@ class EmbeddingProvider(ABC):
 
     async def embed_batch(self, texts: Iterable[str]) -> List[List[float]]:
         """Default batch implementation, providers may override for efficiency."""
-        return [await self.embed(t) for t in texts]
+        vectors = [await self.embed(t) for t in texts]
+        return vectors
+
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaEmbeddingProvider(EmbeddingProvider):
@@ -28,14 +33,22 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         self.model = model
 
     async def embed(self, text: str) -> List[float]:
-        payload = {"model": self.model, "input": text}
+        # Ollama embeddings endpoint expects the text under the "prompt" key
+        payload = {"model": self.model, "prompt": text}
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(f"{self.base_url}/api/embeddings", json=payload)
             resp.raise_for_status()
             data = resp.json()
             embedding = data.get("embedding")
-            if not isinstance(embedding, list):
-                raise ValueError("Invalid embedding response from provider")
+            if not isinstance(embedding, list) or not embedding:
+                logger.error(
+                    "Embedding provider returned invalid payload: status=%s model=%s url=%s body=%s",
+                    resp.status_code,
+                    self.model,
+                    resp.url,
+                    resp.text[:2000],
+                )
+                raise ValueError("Invalid embedding response from provider (empty or missing)")
             return embedding
 
 

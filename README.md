@@ -1,143 +1,284 @@
-# ClauseGuard – AI Contract Risk Scanner
+<div align="center">
 
-A privacy-first, retrieval-driven AI system that detects risky clauses in contracts with zero hallucinated citations.
+# ClauseGuard
 
-Built with a deterministic agent architecture and fully self-hosted LLM inference.
+**AI-Powered Contract Risk Scanner**
 
-Screenshot of dashboard here
-Architecture diagram here
+A privacy-first, retrieval-driven AI system that detects risky clauses in contracts — with zero hallucinated citations.
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.2-1C3C3C?logo=langchain&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+</div>
+
+---
 
 ## Overview
 
-ClauseGuard is an AI-assisted contract risk detection system designed to:
+ClauseGuard is an AI-assisted contract risk detection system that:
 
-- Identify predefined high-risk clause categories
-- Provide grounded explanations
-- Reference exact clause text and page numbers
-- Avoid hallucinated legal analysis
+- **Identifies** predefined high-risk clause categories in uploaded PDF contracts
+- **Provides** grounded explanations backed by exact clause text
+- **References** precise page numbers from the source document
+- **Prevents** hallucinated legal analysis through retrieval-first validation
 
-It is NOT:
-- A legal advisory tool
-- A contract drafting system
-- An autonomous decision engine
+> **ClauseGuard is a structured risk-flagging assistant.** It is not a legal advisory tool, contract drafting system, or autonomous decision engine.
 
-It is a structured risk-flagging assistant.
+---
 
 ## Design Principles
 
-- Retrieval-First Validation
-- Deterministic Risk Categories
-- Source-Grounded Outputs
-- Human-in-the-Loop Review
-- Privacy-by-Design
-- No Long-Term Document Storage
+| Principle | Description |
+|---|---|
+| **Retrieval-First Validation** | LLM only validates retrieved chunks — no open-ended scanning |
+| **Deterministic Risk Categories** | Predefined categories with strict definitions and disambiguation rules |
+| **Source-Grounded Outputs** | Every finding references exact clause text and page number |
+| **Human-in-the-Loop** | Results are flagged for review, not acted upon autonomously |
+| **Privacy-by-Design** | All processing is local; no external API calls or document persistence |
+
+---
 
 ## System Architecture
 
-PDF Upload -> Text Extraction -> Clause Chunking -> Vector Retrieval (FAISS) -> LLM Validation (Local) -> Structured JSON Output -> Risk Dashboard
+```mermaid
+flowchart LR
+    A[PDF Upload] --> B[Text Extraction]
+    B --> C[Clause Chunking]
+    C --> D[Embedding]
+    D --> E[Vector Store]
+    E --> F[LLM Validation]
+    F --> G[Structured JSON]
+    G --> H[Risk Dashboard]
 
-## Agent-Orchestrated Pipeline
+    style A fill:#4A90D9,color:#fff
+    style B fill:#5BA0D9,color:#fff
+    style C fill:#5BA0D9,color:#fff
+    style D fill:#6BB0D9,color:#fff
+    style E fill:#6BB0D9,color:#fff
+    style F fill:#E8A838,color:#fff
+    style G fill:#5CB85C,color:#fff
+    style H fill:#5CB85C,color:#fff
+```
 
-  - Orchestrator Agent (LangGraph)
+### PDF Extraction Pipeline
 
-  - Document Processing Agent
+Text extraction uses a multi-layer fallback strategy:
 
-  - Retrieval Agent
+1. **pdfminer.six** — primary extractor
+2. **PyPDF2** — fallback for simpler PDFs
+3. **OCR (pytesseract + pypdfium2)** — fallback for scanned documents
 
-  - Risk Validation Agent
+---
 
-## Retrieval-First Validation Explained
+## LangGraph Agent Pipeline
 
-  - Embeddings retrieve candidate clauses
+The analysis pipeline is built as a **LangGraph StateGraph** with conditional error edges:
 
-  - LLM validates only retrieved chunks
+```mermaid
+stateDiagram-v2
+    [*] --> DocumentNode
+    DocumentNode --> RetrievalNode : valid
+    DocumentNode --> [*] : error
+    RetrievalNode --> ValidationNode : chunks found
+    RetrievalNode --> [*] : error
+    ValidationNode --> [*] : done
+```
 
-  - No open-ended scanning
+| Node | Responsibility |
+|---|---|
+| **DocumentNode** | Validates `doc_id` exists in the vector store |
+| **RetrievalNode** | Embeds user query + category seed queries; retrieves and deduplicates top-K chunks |
+| **ValidationNode** | Runs LLM validation per chunk × category; filters by confidence threshold |
 
-  - Prevents hallucinated risks
+State flows through a shared `AgentState` (TypedDict). Any node can set `error` to halt the pipeline early.
+
+---
+
+## Risk Categories
+
+| Key | Category | Description |
+|---|---|---|
+| `UNLIMITED_LIABILITY` | Unlimited Liability | Clauses imposing liability without a clear cap or limitation on damages |
+| `INDEMNIFICATION` | Indemnification | Obligation to indemnify for broad categories of losses or third-party claims |
+| `TERMINATION` | Termination for Convenience | Unilateral termination without cause, short notice, or without compensation |
+
+Each category includes:
+- **Definition** — strict criteria with disambiguation rules
+- **Seed query** — used for category-aware retrieval augmentation
+
+---
 
 ## Tech Stack
 
-## Backend
-- Python 3.11
-- FastAPI
-- LangGraph
-- FAISS
-- Ollama (Local LLM Inference)
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.11, FastAPI, Pydantic v2, LangGraph |
+| **LLM Inference** | Ollama (self-hosted), Llama 3 8B |
+| **Embeddings** | BGE-Large via Ollama |
+| **Vector Store** | In-memory cosine similarity with JSON persistence |
+| **PDF Extraction** | pdfminer.six, PyPDF2, pytesseract (OCR) |
+| **Frontend** | Next.js 14, TypeScript, TailwindCSS |
+| **Infrastructure** | Docker Compose (backend, frontend, Ollama) |
 
-## Models
-- Llama 3 8B (quantized)
-- BGE embeddings
+---
 
-## Frontend
-- Next.js
-- TypeScript
-- TailwindCSS
+## Project Structure
 
-## Infrastructure
-- Fully local deployment via Docker Compose
-- No external API dependency
+```
+clauseguard/
+├── backend/
+│   ├── app/
+│   │   ├── agents/                # LangGraph pipeline
+│   │   │   ├── state.py           # AgentState TypedDict
+│   │   │   ├── document_agent.py  # Document validation node
+│   │   │   ├── retrieval_agent.py # Embedding + vector search node
+│   │   │   ├── validation_agent.py# LLM validation node
+│   │   │   └── orchestrator.py    # StateGraph builder + run_pipeline()
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   │       ├── analyze.py     # /analyze endpoint
+│   │   │       ├── upload.py      # /upload endpoint
+│   │   │       └── health.py      # /health endpoint
+│   │   ├── services/
+│   │   │   ├── llm/
+│   │   │   │   ├── base.py        # Abstract LLM provider
+│   │   │   │   ├── ollama_provider.py
+│   │   │   │   └── types.py       # Validation prompt builder
+│   │   │   ├── embedding_service.py
+│   │   │   ├── vector_store.py    # In-memory + JSON persistence
+│   │   │   ├── pdf_extraction.py  # Multi-fallback PDF extraction
+│   │   │   ├── chunking.py        # Page-aware text chunking
+│   │   │   └── risk_registry.py   # Category definitions + seed queries
+│   │   ├── models/
+│   │   │   └── risk_models.py     # RiskValidationResult schema
+│   │   ├── config.py              # Pydantic settings
+│   │   └── main.py                # FastAPI app factory
+│   ├── tests/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── app/
+│   │   └── analyze/page.tsx       # Upload + analyze UI
+│   ├── components/
+│   │   ├── UploadDropzone.tsx
+│   │   ├── RiskDashboard.tsx
+│   │   ├── RiskCard.tsx
+│   │   └── ConfidenceBadge.tsx
+│   ├── Dockerfile
+│   └── package.json
+├── infra/
+│   ├── docker-compose.yml
+│   ├── nginx.conf
+│   └── terraform/                 # AWS ECS deployment (scaffold)
+└── README.md
+```
 
-## Privacy Model
-
-- All processing occurs locally
-- No external API calls required
-- No document persistence
-- No training on user data
-- In-memory processing only
+---
 
 ## Quick Start
 
-### 1. Clone repository
-git clone ...
+### Prerequisites
+
+- **Docker** and **Docker Compose**
+- **16 GB RAM** recommended (Ollama + LLM model)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/bahraminekoo/clauseguard.git
 cd clauseguard
+```
 
-### 2. Start services
-docker compose up
+### 2. Start all services
 
-### 3. Access frontend
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+### 3. Pull the required models into Ollama
+
+```bash
+docker compose -f infra/docker-compose.yml exec ollama ollama pull llama3
+docker compose -f infra/docker-compose.yml exec ollama ollama pull bge-large
+```
+
+### 4. Open the dashboard
+
+```
 http://localhost:3000
+```
 
-## Requirements
+---
 
-- Docker
-- 16GB RAM recommended
-- Ollama installed
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/upload` | Upload a PDF contract; returns `doc_id` |
+| `POST` | `/analyze` | Analyze a document by `doc_id` + `query_text`, or raw `text` |
+| `GET` | `/health` | Health check |
+
+---
 
 ## Example Output
 
+```json
 {
-  "category": "Unlimited Liability",
-  "confidence": 0.87,
-  "page": 12,
-  "explanation": "The clause imposes liability without limitation...",
-  "clause_text": "Vendor shall be liable for all damages..."
+  "findings": [
+    {
+      "category": "Termination for Convenience",
+      "confidence": 0.92,
+      "page": 3,
+      "explanation": "The Employer may terminate at any time for sole convenience, with or without cause.",
+      "clause_text": "The Employer shall have the right to terminate this Agreement at any time for its sole convenience..."
+    }
+  ]
 }
+```
 
-## Model Abstraction
+---
 
-ClauseGuard supports interchangeable LLM providers:
+## Provider Abstraction
 
-- LocalProvider (Ollama)
-- Future API providers
+ClauseGuard separates orchestration from model implementation:
 
-The architecture separates orchestration logic from model implementation,
-making the system provider-agnostic.
+- **LLM Provider** — abstract `LLMProvider` base class; current implementation: `OllamaLLMProvider`
+- **Embedding Provider** — abstract `EmbeddingProvider` base class; current implementation: `OllamaEmbeddingProvider`
+
+Swap providers by implementing the base class — no changes to agents or routes required.
+
+---
 
 ## Testing
 
-- Unit tests for chunking and retrieval
-- Schema validation tests
-- API endpoint tests
-- Deterministic validation output checks
+```bash
+docker compose -f infra/docker-compose.yml exec backend pytest tests/ -v
+```
+
+- **Validation output tests** — deterministic JSON schema checks
+- **Retry/fallback tests** — LLM provider handles malformed responses
+- **Chunking tests** — page-aware segmentation
+- **API endpoint tests** — upload and analyze integration
+
+---
 
 ## Roadmap
 
-- Multi-document comparison
-- Severity scoring
-- Jurisdiction-aware risk ontology
-- SaaS deployment mode
-- API-based inference support
+- [ ] Multi-document comparison
+- [ ] Severity scoring per finding
+- [ ] Jurisdiction-aware risk ontology
+- [ ] FAISS / pgvector for production-scale vector search
+- [ ] SaaS deployment mode (AWS ECS via Terraform)
+- [ ] API-based inference support (OpenAI, Anthropic)
+- [ ] Streaming analysis results
 
+---
 
+## License
+
+MIT
 

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.agents.orchestrator import run_pipeline
 from app.api.schemas import AnalyzeRequest, AnalyzeResponse, RiskFinding
-from app.services.llm.ollama_provider import OllamaLLMProvider
+from app.services.llm.factory import get_llm_provider
 from app.services.risk_registry import RISK_CATEGORIES, get_category_definition
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
         if not text:
             raise HTTPException(status_code=400, detail="text is required")
 
-        llm = OllamaLLMProvider()
+        llm = get_llm_provider()
         findings: list[RiskFinding] = []
         for ck in category_keys:
             category_definition = get_category_definition(ck)

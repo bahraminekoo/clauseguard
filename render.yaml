@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: clauseguard-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: EMBEDDING_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_LLM_MODEL
+        value: meta-llama/llama-3.1-8b-instruct:free
+      - key: OPENROUTER_EMBEDDING_MODEL
+        value: nvidia/llama-nemotron-embed-vl-1b-v2:free
+      - key: CORS_ALLOW_ORIGINS
+        value: https://clauseguard.vercel.app

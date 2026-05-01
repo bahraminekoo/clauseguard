@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    ports:
+      - "8000:8000"
+    environment:
+      - CORS_ALLOW_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LLM_PROVIDER=openrouter
+      - EMBEDDING_PROVIDER=openrouter
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct:free
+      - OPENROUTER_EMBEDDING_MODEL=nvidia/llama-nemotron-embed-vl-1b-v2:free
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend

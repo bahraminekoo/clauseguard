@@ -4,7 +4,7 @@ import logging
 
 from app.agents.state import AgentState
 from app.api.schemas import RiskFinding
-from app.services.llm.ollama_provider import OllamaLLMProvider
+from app.services.llm.factory import get_llm_provider
 from app.services.risk_registry import RISK_CATEGORIES, get_category_definition
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ async def validation_node(state: AgentState) -> AgentState:
     if not retrieved_chunks:
         return {}
 
-    llm = OllamaLLMProvider()
+    llm = get_llm_provider()
     findings: list[RiskFinding] = []
 
     for chunk_text, score, page in retrieved_chunks:

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # OpenRouter settings
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_llm_model: str = "meta-llama/llama-4-scout:free"
+    openrouter_llm_model: str = "meta-llama/llama-3.3-70b-instruct:free"
     openrouter_embedding_model: str = "nvidia/llama-nemotron-embed-vl-1b-v2:free"
 
 

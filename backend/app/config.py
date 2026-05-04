@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     hf_api_key: str = ""
     hf_llm_base_url: str = "https://router.huggingface.co/v1"
     hf_llm_model: str = "meta-llama/Llama-3.3-70B-Instruct"
-    hf_embedding_base_url: str = "https://router.huggingface.co/hf-inference/models/BAAI/bge-large-en-v1.5"
+    hf_embedding_base_url: str = "https://router.huggingface.co/hf-inference"
     hf_embedding_model: str = "BAAI/bge-large-en-v1.5"
 
 

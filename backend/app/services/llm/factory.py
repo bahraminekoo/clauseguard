@@ -8,5 +8,8 @@ def get_llm_provider() -> LLMProvider:
     if provider == "openrouter":
         from app.services.llm.openrouter_provider import OpenRouterLLMProvider
         return OpenRouterLLMProvider()
+    if provider == "huggingface":
+        from app.services.llm.huggingface_provider import HuggingFaceLLMProvider
+        return HuggingFaceLLMProvider()
     from app.services.llm.ollama_provider import OllamaLLMProvider
     return OllamaLLMProvider()

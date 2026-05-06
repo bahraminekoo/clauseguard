@@ -44,7 +44,6 @@ class OllamaLLMProvider(LLMProvider):
         # On failure, return a safe negative result (no raw text leakage)
         return RiskValidationResult(
             risk_detected=False,
-            confidence=0.0,
             explanation=f"Model output invalid: {last_error}",
             category="UNKNOWN",
             page=None,

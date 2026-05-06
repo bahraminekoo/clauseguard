@@ -44,7 +44,6 @@ async def analyze(payload: AnalyzeRequest) -> AnalyzeResponse:
             findings.append(
                 RiskFinding(
                     category=RISK_CATEGORIES[ck]["name"],
-                    confidence=result.confidence,
                     page=result.page,
                     explanation=result.explanation,
                     clause_text=text,

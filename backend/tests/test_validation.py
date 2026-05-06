@@ -18,7 +18,6 @@ async def test_validate_clause_parses_valid_json():
                 json={
                     "message": {"content": json.dumps({
                         "risk_detected": True,
-                        "confidence": 0.82,
                         "explanation": "Unlimited liability detected.",
                     })}
                 },
@@ -28,7 +27,6 @@ async def test_validate_clause_parses_valid_json():
         result = await provider.validate_clause("clause text", "definition")
 
     assert result.risk_detected is True
-    assert result.confidence == 0.82
     assert result.explanation.startswith("Unlimited liability")
     assert result.category == "UNKNOWN"  # category is filled upstream
     assert result.clause_text == "clause text"
@@ -50,7 +48,6 @@ async def test_validate_clause_retries_and_returns_safe_failure():
         result = await provider.validate_clause("clause text", "definition")
 
     assert result.risk_detected is False
-    assert result.confidence == 0.0
     assert "invalid" in result.explanation.lower()
     assert result.category == "UNKNOWN"
     assert result.clause_text == "clause text"

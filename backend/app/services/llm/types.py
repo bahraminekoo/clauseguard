@@ -6,7 +6,6 @@ Respond ONLY with a single JSON object exactly matching this schema:
 
 {
   "risk_detected": boolean,
-  "confidence": number between 0 and 1,
   "explanation": non-empty string,
   "category": string,
   "page": integer or null,
@@ -26,7 +25,6 @@ DECISION STANDARD
 - Only set risk_detected=true if the clause CLEARLY and EXPLICITLY matches the category definition.
 - If unsure or ambiguous, return:
   risk_detected=false,
-  confidence=0.0,
   explanation="No risk detected",
   category="NONE".
 
@@ -66,10 +64,6 @@ Termination for misconduct, breach, or cause is NOT termination for convenience.
 Do NOT infer risk from tone, harsh wording, or legal strictness.
 Risk must arise from explicit legal effect stated in the clause.
 
-CONFIDENCE SCORING
-- 0.9–1.0: explicit and unambiguous match
-- 0.6–0.8: clear but slightly implicit wording
-- 0.0: no clear match
 """
 
 
@@ -88,7 +82,7 @@ def build_validation_prompt(clause_text: str, category_name: str, category_defin
                 "VALIDATION INSTRUCTIONS:\n"
                 "- Only flag risk_detected=true if the clause CLEARLY matches this category.\n"
                 "- If the clause does not explicitly satisfy the definition, return:\n"
-                "  risk_detected=false, confidence=0.0, "
+                "  risk_detected=false, "
                 "explanation='No risk detected', category='NONE'.\n\n"
 
                 "DISAMBIGUATION RULES:\n"

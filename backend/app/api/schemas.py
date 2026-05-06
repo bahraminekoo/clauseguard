@@ -17,7 +17,6 @@ class AnalyzeRequest(BaseModel):
 
 class RiskFinding(BaseModel):
     category: str
-    confidence: float
     page: int | None = None
     explanation: str
     clause_text: str

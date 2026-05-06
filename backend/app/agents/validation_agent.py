@@ -9,8 +9,6 @@ from app.services.risk_registry import RISK_CATEGORIES, get_category_definition
 
 logger = logging.getLogger(__name__)
 
-CONFIDENCE_THRESHOLD = 0.3
-
 
 async def validation_node(state: AgentState) -> AgentState:
     """LangGraph node: validates retrieved chunks against each category using the LLM provider."""
@@ -39,21 +37,19 @@ async def validation_node(state: AgentState) -> AgentState:
                 continue
 
             logger.debug(
-                "ValidationNode: chunk_score=%.3f category=%s risk=%s confidence=%.2f snippet=%.80s",
+                "ValidationNode: chunk_score=%.3f category=%s risk=%s snippet=%.80s",
                 score,
                 category_key,
                 result.risk_detected,
-                result.confidence,
                 chunk_text,
             )
 
-            if not result.risk_detected or result.confidence < CONFIDENCE_THRESHOLD:
+            if not result.risk_detected:
                 continue
 
             findings.append(
                 RiskFinding(
                     category=category_name,
-                    confidence=result.confidence,
                     page=page,
                     explanation=result.explanation,
                     clause_text=chunk_text,

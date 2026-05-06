@@ -10,7 +10,6 @@ import UploadDropzone from "../../components/UploadDropzone";
 
 type RiskFinding = {
   category: string;
-  confidence: number;
   page?: number | null;
   explanation: string;
   clause_text: string;

@@ -1,10 +1,6 @@
 
-import ConfidenceBadge from "./ConfidenceBadge";
-
-
 export type RiskFinding = {
   category: string;
-  confidence: number;
   page?: number | null;
   explanation: string;
   clause_text: string;
@@ -21,7 +17,6 @@ export default function RiskCard({ finding }: { finding: RiskFinding }) {
             Page: {finding.page ?? "—"}
           </div>
         </div>
-        <ConfidenceBadge confidence={finding.confidence} />
       </div>
 
       <div className="mt-3 text-sm text-slate-200">{finding.explanation}</div>

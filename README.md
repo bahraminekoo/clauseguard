@@ -92,7 +92,7 @@ stateDiagram-v2
 |---|---|
 | **DocumentNode** | Validates `doc_id` exists in the vector store |
 | **RetrievalNode** | Embeds user query + category seed queries; retrieves and deduplicates top-K chunks |
-| **ValidationNode** | Runs LLM validation per chunk × category; filters by confidence threshold |
+| **ValidationNode** | Runs LLM validation per chunk × category; filters by risk detection flag |
 
 State flows through a shared `AgentState` (TypedDict). Any node can set `error` to halt the pipeline early.
 
@@ -166,8 +166,7 @@ clauseguard/
 │   ├── components/
 │   │   ├── UploadDropzone.tsx
 │   │   ├── RiskDashboard.tsx
-│   │   ├── RiskCard.tsx
-│   │   └── ConfidenceBadge.tsx
+│   │   └── RiskCard.tsx
 │   ├── Dockerfile
 │   └── package.json
 ├── infra/
@@ -231,7 +230,6 @@ http://localhost:3000
   "findings": [
     {
       "category": "Termination for Convenience",
-      "confidence": 0.92,
       "page": 3,
       "explanation": "The Employer may terminate at any time for sole convenience, with or without cause.",
       "clause_text": "The Employer shall have the right to terminate this Agreement at any time for its sole convenience..."
